@@ -1,22 +1,24 @@
-from tokenizer import think, res, eos
+from tokenizer import res, eos
 
 
 def calc_reward(true_result: int, response_text: str) -> float:
-    # response_text should be like "1234abcd<res>7<eos>"
+    # response_text should be like:
+    # think-mode: "3+4<THINK>1234abcd<RES>7<EOS>"
+    # non-think-mode： "3+4<RES>7<EOS>"
     r = 0.0
     if not response_text.endswith(eos):
         return r
-    r += 0.1
-    if think in response_text:
+    if res not in response_text:
         return r
-    if res in response_text:
-        r += 0.1
-    result_text = response_text[response_text.find(res) + len(res):-len(eos)]
+    res_idx = response_text.find(res)
+    # think_text = response_text[:res_idx]
+    result_text = response_text[res_idx + len(res):-len(eos)]
     try:
         result = int(result_text)
     except ValueError:
         return r
-    r += 0.1
+    # r += max(0.0, 1 - abs(result - true_result) / 5)
     if result == true_result:
         r += 1.0
+    # r += max(0.2, len(think_text) / 100)
     return r

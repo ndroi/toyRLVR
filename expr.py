@@ -1,6 +1,6 @@
 import random
 
-from common import *
+from config import *
 from tokenizer import operators
 
 

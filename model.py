@@ -6,7 +6,6 @@ from torch import Tensor
 from torch import nn
 
 D_MODEL = 64
-D_FF = 64 * 4
 N_LAYER = 8
 N_HEAD = 4
 
@@ -138,19 +137,22 @@ def generate_pe(max_in_len: int, d_model: int) -> Tensor:
 
 
 class Model(nn.Module):
-    def __init__(self, max_in_len: int, vocab_size: int):
+    def __init__(self, vocab_size: int, max_in_len: int = 1024):
         super().__init__()
         self.embed = nn.Embedding(num_embeddings=vocab_size, embedding_dim=D_MODEL)
         self.register_buffer('pe', generate_pe(max_in_len=max_in_len, d_model=D_MODEL))
         self.decoder = Decoder(d_model=D_MODEL, n_head=N_HEAD, n_layer=N_LAYER)
-        self.out_linear = nn.Linear(in_features=D_MODEL, out_features=vocab_size, bias=True)
+        self.policy_out_linear = nn.Linear(in_features=D_MODEL, out_features=vocab_size, bias=True)
+        self.value_out_linear = nn.Linear(in_features=D_MODEL, out_features=1, bias=True)
 
     def forward(self, tokens: Tensor, past_kvs: List[KVCache] = None) -> (Tensor, KVCache):
         in_len = tokens.shape[1]
         embedding = self.embed(tokens)
         embedding *= (D_MODEL ** 0.5)
-        pe = self.pe[:in_len, :]
+        past_len = past_kvs[0][0].size(1) if past_kvs else 0
+        pe = self.pe[past_len:past_len + in_len]
         embedding += pe
         embedding, cur_kvs = self.decoder(embedding, past_kvs=past_kvs)  # [bs, in_len, d_model]
-        out = self.out_linear(embedding)  # [bs, in_len, vocab_size]
-        return out, cur_kvs
+        policy_out = self.policy_out_linear(embedding)  # [bs, in_len, vocab_size]
+        value_out = self.value_out_linear(embedding)[:, :, 0]  # [bs, in_len]
+        return policy_out, value_out, cur_kvs

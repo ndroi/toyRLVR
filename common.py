@@ -1,5 +1,0 @@
-MAX_TOKEN_NUM = 128
-MAX_EXPR_NUM = 12
-MAX_EXPR_NUM_CNT = 8
-CKPT_PATH = './ckpt/model_params.pth'
-LEARNING_RATE = 1e-5
