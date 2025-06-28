@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 from config import *
-from tokenizer import Tokenizer, think, res, eos, numbers, operators, extra
+from tokenizer import Tokenizer, think, res, eos, numbers, operators, sep
 
 
 class Actor:
@@ -19,7 +19,7 @@ class Actor:
             all_tokens = list(range(self._tokenizer.vocab_size()))
             # constraint decoding in think phase
             self._constraint_think_mask = np.zeros_like(all_tokens, dtype=np.float32)
-            think_phase_words = numbers + operators + extra + [res]
+            think_phase_words = numbers + operators + [sep, res]
             constraint_think_tokens = set(self._tokenizer.encode(''.join(think_phase_words)))
             for token in all_tokens:
                 if token not in constraint_think_tokens:
@@ -47,14 +47,12 @@ class Actor:
         text = expr + think if THINK_MODE else expr + res
         tokens = self._tokenizer.encode(text)
         probs = [1.0] * (len(tokens) - 1)
-        values = [0.0] * (len(tokens) - 1)
         past_kvs = None
         while True:
             input_tokens = tokens[-1:] if past_kvs else tokens
             with torch.inference_mode():
                 _input = torch.tensor(data=np.array(input_tokens).reshape(1, -1), dtype=torch.int)
-                logit, value, past_kvs = self._model(_input, past_kvs=past_kvs)
-                values.append(float(value[0][-1]))
+                logit, past_kvs = self._model(_input, past_kvs=past_kvs)
                 next_token_logit = logit[0][-1]
                 if self._constraint:
                     next_token_logit = self._constraint_decoding(text, next_token_logit)
@@ -73,7 +71,6 @@ class Actor:
         out = {
             'text': text,
             'tokens': tokens,
-            'values': values,
             'probs': probs,
         }
         return out

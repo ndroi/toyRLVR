@@ -5,7 +5,7 @@ def calc_reward(true_result: int, response_text: str) -> float:
     # response_text should be like:
     # think-mode: "3+4<THINK>1234abcd<RES>7<EOS>"
     # non-think-mode： "3+4<RES>7<EOS>"
-    r = 0.0
+    r = -150.0
     if not response_text.endswith(eos):
         return r
     if res not in response_text:
@@ -17,8 +17,5 @@ def calc_reward(true_result: int, response_text: str) -> float:
         result = int(result_text)
     except ValueError:
         return r
-    # r += max(0.0, 1 - abs(result - true_result) / 5)
-    if result == true_result:
-        r += 1.0
-    # r += max(0.2, len(think_text) / 100)
+    r = max(float(-abs(result - true_result)), -100.0)
     return r

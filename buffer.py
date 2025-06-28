@@ -40,7 +40,7 @@ class Buffer:
             'loss_mask': np.zeros((batch_size, max_tokens_len - 1), dtype=np.int32),
             'reward': np.zeros(batch_size, dtype=np.float32),
             'probs': np.ones((batch_size, max_tokens_len - 1), dtype=np.float32),
-            'advantages': np.zeros((batch_size, max_tokens_len - 1), dtype=np.float32),
+            'advantage': np.zeros((batch_size, max_tokens_len - 1), dtype=np.float32),
         }
         for i, sample in enumerate(samples):
             _len = len(sample['tokens'])
@@ -49,5 +49,5 @@ class Buffer:
             batch['loss_mask'][i, :_len - 1] = sample['loss_mask']
             batch['reward'][i] = sample['reward']
             batch['probs'][i, :_len - 1] = sample['probs']
-            batch['advantages'][i, :_len - 1] = sample['advantages']
+            batch['advantage'][i, :_len - 1] = sample['advantage']
         return batch

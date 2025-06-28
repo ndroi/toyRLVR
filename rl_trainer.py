@@ -41,11 +41,11 @@ class RLTrainer:
         _return = torch.tensor(data=sample['reward'], dtype=torch.float32, device=device).view(-1, 1)
         mask = torch.tensor(data=sample['loss_mask'], dtype=torch.bool, device=device)
         old_action_prob = torch.tensor(data=sample['probs'], dtype=torch.float32, device=device)
-        advantage = torch.tensor(data=sample['advantages'], dtype=torch.float32, device=device)
+        advantage = torch.tensor(data=sample['advantage'], dtype=torch.float32, device=device)
         state = tokens[:, :-1]
         action = tokens[:, 1:]
 
-        logit, value, _ = self._model(state)
+        logit, _ = self._model(state)
 
         # policy loss
         prob = nn.functional.softmax(logit, dim=-1)
@@ -55,20 +55,15 @@ class RLTrainer:
         masked_policy_obj = policy_obj[mask]
         policy_loss = -torch.mean(masked_policy_obj)
 
-        # value loss
-        _value_loss = 0.5 * torch.square(value - _return)
-        masked_value_loss = _value_loss[mask]
-        value_loss = torch.mean(masked_value_loss)
-
         # entropy loss
         masked_prob = prob[mask]
         # entropy = -torch.sum(masked_prob * torch.log(masked_prob), dim=-1)
-        # standard entropy is week for this task.
+        # standard entropy is weak for this task.
         entropy = -torch.sum(torch.log(masked_prob), dim=-1)
         entropy_loss = torch.mean(entropy)
 
         # total loss
-        loss = policy_loss + value_loss + entropy_loss * 1e-4
+        loss = policy_loss + entropy_loss * 1e-4
 
         loss.backward()
         self._optimizer.step()
@@ -87,7 +82,6 @@ class RLTrainer:
                 f'[RL-Trainer] '
                 f'step: {step} '
                 f'policy-loss: {policy_loss:.4f} '
-                f'value-loss: {value_loss:.4f} '
                 f'entropy-loss: {entropy_loss:.4f} '
                 f'total-loss: {loss:.4f}',
             )

@@ -6,7 +6,7 @@ from tokenizer import operators
 
 def gen_expr() -> (str, int):
     expr = ''
-    num_cnt = random.randint(2, MAX_EXPR_NUM_CNT)
+    num_cnt = random.randint(1, MAX_EXPR_NUM_CNT)
     for i in range(num_cnt):
         num = random.randint(0, MAX_EXPR_NUM)
         expr += str(num)

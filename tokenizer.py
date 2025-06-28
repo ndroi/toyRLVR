@@ -2,16 +2,16 @@ from typing import List
 
 numbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
 operators = ['+', '-']
+sep = ','
 think = '<THINK>'
 res = '<RES>'
 eos = '<EOS>'
 special = [think, res, eos]
-extra = ['a', 'b', 'c', 'd']
 
 
 class Tokenizer:
     def __init__(self):
-        self._vocab = numbers + operators + special + extra
+        self._vocab = numbers + operators + [sep] + special
         self._word2id = {}
         self._word2id = {word: i for i, word in enumerate(self._vocab)}
         self._id2word = {i: word for i, word in enumerate(self._vocab)}

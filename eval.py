@@ -6,7 +6,7 @@ from expr import gen_expr
 from model import Model
 from tokenizer import Tokenizer
 
-EVAL_COUNT = 1
+EVAL_COUNT = 10
 
 
 def main():
@@ -17,7 +17,6 @@ def main():
     for i in range(EVAL_COUNT):
         expr, result = gen_expr()
         out = actor.run(expr)
-        # print(out)
         text = out['text']
         print(f'[Eval] eval-{i}, expr: {expr} true-result: {result} text: {text}')
 

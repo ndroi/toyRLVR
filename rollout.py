@@ -33,23 +33,29 @@ class Rollout:
         self._model_param_time = model_param_time if model_param_time > 0 else os.stat(CKPT_PATH).st_mtime
 
     def run(self):
-        update_model_step = 16
         while True:
             self._update_model_param()
-            for _ in range(update_model_step):
-                sample = self.generate()
+            samples = self.generate(group_size=ROLLOUT_GROUP_SIZE)
+            for sample in samples:
                 self._sample_queue.put(sample)
 
-    def generate(self) -> dict:
+    def generate(self, group_size: int) -> [dict]:
         expr, result = gen_expr()
-        out = self._actor.run(expr)
-        text = out['text']
-        tokens = out['tokens']
-        response_idx = tokens.index(self._response_token)
-        reward = calc_reward(result, text)
-        loss_mask = np.zeros_like(tokens[:-1], dtype=np.float32)
-        loss_mask[response_idx:] = 1
-        out['loss_mask'] = loss_mask
-        out['reward'] = reward
-        out['advantages'] = reward - np.array(out['values'], dtype=np.float32)
-        return out
+        out_group = []
+        for _ in range(group_size):
+            out = self._actor.run(expr)
+            text = out['text']
+            reward = calc_reward(result, text)
+            tokens = out['tokens']
+            response_idx = tokens.index(self._response_token)
+            loss_mask = np.zeros_like(tokens[:-1], dtype=np.float32)
+            loss_mask[response_idx:] = 1
+            out['loss_mask'] = loss_mask
+            out['reward'] = reward
+            out_group.append(out)
+        reward_group = [out['reward'] for out in out_group]
+        mean = np.mean(reward_group)
+        std = np.std(reward_group) + 1e-8
+        for out in out_group:
+            out['advantage'] = (out['reward'] - mean) / std
+        return out_group
