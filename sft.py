@@ -38,7 +38,7 @@ class SFTDataset:
             _numbers.pop(k + 1)
             _reduced = ''
             for i, _num in enumerate(_numbers):
-                if _num > 0 and i > 0:
+                if _num >= 0 and i > 0:
                     _reduced += '+' + str(_num)
                 else:
                     _reduced += str(_num)
