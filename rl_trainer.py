@@ -56,19 +56,16 @@ class RLTrainer:
         policy_loss = -torch.mean(masked_policy_obj)
 
         # entropy loss
-        masked_prob = prob[mask]
+        # masked_prob = prob[mask]
         # entropy = -torch.sum(masked_prob * torch.log(masked_prob), dim=-1)
-        # standard entropy is weak for this task.
-        entropy = -torch.sum(torch.log(masked_prob), dim=-1)
-        entropy_loss = torch.mean(entropy)
 
         # total loss
-        loss = policy_loss + entropy_loss * 1e-4
+        loss = policy_loss
 
         loss.backward()
         self._optimizer.step()
         self._optimizer.zero_grad()
-        if (step + 1) % 1000 == 0:
+        if (step + 1) % SAVE_CKPT_STEP == 0:
             self._save_ckpt()
         if (step + 1) % 10 == 0:
             print('-' * 30)
@@ -82,8 +79,6 @@ class RLTrainer:
                 f'[RL-Trainer] '
                 f'step: {step} '
                 f'policy-loss: {policy_loss:.4f} '
-                f'entropy-loss: {entropy_loss:.4f} '
-                f'total-loss: {loss:.4f}',
             )
 
     def run(self):

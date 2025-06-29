@@ -6,6 +6,8 @@ from threading import Thread
 import numpy as np
 import torch.multiprocessing as mp
 
+from config import *
+
 
 class Buffer:
     def __init__(self, sample_queue: mp.Queue, max_buffer_size=2048):
@@ -23,15 +25,19 @@ class Buffer:
                 if len(self._samples) > self._max_buffer_size:
                     del self._samples[0]
             except Empty:
-                time.sleep(0.1)
+                time.sleep(.5)
 
     def batch(self, batch_size: int) -> dict:
         assert 1 <= batch_size <= self._max_buffer_size
-        min_samples_count = min(16 * batch_size, self._max_buffer_size)
+        min_samples_count = min(16 * batch_size, self._max_buffer_size) if RL_SAMPLE_REUSE else batch_size
         while len(self._samples) < min_samples_count:
             print(f'[Buffer] waiting for samples({len(self._samples)}/{min_samples_count})...')
-            time.sleep(1.0)
-        samples = random.sample(self._samples, batch_size)
+            time.sleep(.5)
+        if RL_SAMPLE_REUSE:
+            samples = random.sample(self._samples, batch_size)
+        else:
+            samples = self._samples[:batch_size]
+            del self._samples[:batch_size]
         # padding to the same length.
         max_tokens_len = max([len(s['tokens']) for s in samples])
         batch = {
